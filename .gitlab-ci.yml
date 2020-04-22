@@ -1,0 +1,17 @@
+# .gitlab-ci.yml
+image: node:12.16.2
+
+before_script:
+  - yarn install --frozen-lockfile
+
+pages:
+  script:
+  - yarn build
+  - rm -rf public
+  - mv build public
+  - find public -type f -regex '.*\.\(htm\|html\|txt\|text\|js\|css\)$' -exec gzip -f -k {} \;
+  artifacts:
+    paths:
+    - public
+  only:
+  - master

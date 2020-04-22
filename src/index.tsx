@@ -12,53 +12,57 @@ import { TodoInterface } from './interfaces'
 // Import styles
 import './styles/styles.css'
 
+import * as datalog from '@datalogui/datalog'
+import { useQuery } from '@datalogui/react'
+
+// The main todo table
+const Todos = datalog.newTable<TodoInterface>({
+  id: datalog.StringType,
+  text: datalog.StringType,
+  isCompleted: datalog.BoolType
+})
+
 // TodoListApp component
 const TodoListApp = () => {
-  const [todos, setTodos] = React.useState<TodoInterface[]>([])
+  const todos = useQuery(({ id, text, isCompleted }: TodoInterface) => {
+    Todos({ id, text, isCompleted })
+  })
 
   // Creating new todo item
   function handleTodoCreate(todo: TodoInterface) {
-    // Prepare new todos state
-    const newTodosState: TodoInterface[] = [...todos]
-
-    // Update new todos state
-    newTodosState.push(todo)
-
-    // Update todos state
-    setTodos(newTodosState)
+    Todos.assert(todo)
   }
 
   // Update existing todo item
   function handleTodoUpdate(event: React.ChangeEvent<HTMLInputElement>, id: string) {
-    // Prepare new todos state
-    const newTodosState: TodoInterface[] = [...todos]
-
-    // Find correct todo item to update
-    newTodosState.find((todo: TodoInterface) => todo.id === id)!.text = event.target.value
-
-    // Update todos state
-    setTodos(newTodosState)
+    const todoToUpdate = todos.find((todo: TodoInterface) => todo.id === id)
+    if (todoToUpdate) {
+      Todos.retract(todoToUpdate)
+      Todos.assert({
+        ...todoToUpdate,
+        text: event.target.value
+      })
+    }
   }
 
   // Remove existing todo item
   function handleTodoRemove(id: string) {
-    // Prepare new todos state
-    const newTodosState: TodoInterface[] = todos.filter((todo: TodoInterface) => todo.id !== id)
-
-    // Update todos state
-    setTodos(newTodosState)
+    const todoToRemove: TodoInterface | undefined = todos.find((todo: TodoInterface) => todo.id === id)
+    if (todoToRemove) {
+      Todos.retract(todoToRemove)
+    }
   }
 
   // Check existing todo item as completed
   function handleTodoComplete(id: string) {
-    // Copy current todos state
-    const newTodosState: TodoInterface[] = [...todos]
-
-    // Find the correct todo item and update its 'isCompleted' key
-    newTodosState.find((todo: TodoInterface) => todo.id === id)!.isCompleted = !newTodosState.find((todo: TodoInterface) => todo.id === id)!.isCompleted
-
-    // Update todos state
-    setTodos(newTodosState)
+    const todoToUpdate = todos.find((todo: TodoInterface) => todo.id === id)
+    if (todoToUpdate) {
+      Todos.retract(todoToUpdate)
+      Todos.assert({
+        ...todoToUpdate,
+        isCompleted: !todoToUpdate.isCompleted
+      })
+    }
   }
 
   // Check if todo item has title
